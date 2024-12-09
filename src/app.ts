@@ -1,20 +1,29 @@
-import express, { Request, Response } from 'express';
-import { connectDB } from './database';
-import { errorHandler } from './middlewares/errorHandle';
-import authRoutes from './routes/authRoutes'
-import * as dotenv from 'dotenv';
+import { ApolloServer } from '@apollo/server';
+import { startStandaloneServer } from '@apollo/server/standalone';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import { authDirectiveTransformer } from './graphql/directives/authDirective';
+import { typeDefs } from './graphql/types';
+import { resolvers } from './graphql/resolvers';
+import { Context } from 'vm';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-dotenv.config();
-connectDB();
+const schema = makeExecutableSchema({
+  typeDefs,
+  resolvers,
+});
 
-app.use(express.json());
-app.use(errorHandler);
-app.get('/', (req: Request, res: Response) => {
-  res.send('Bem-vindo à OdysseIA!');
+const schemaWithAuth = authDirectiveTransformer(schema);
+
+const server = new ApolloServer({
+  schema: schemaWithAuth,
 });
-app.use('/auth', authRoutes); 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+
+(async () => {
+  const { url } = await startStandaloneServer(server, {
+    listen: { port: 4000 },
+    context: async ({ req }): Promise<Context> => {
+      const token = req.headers.authorization?.split(' ')[1] || null;
+      return { token };
+    },
+  });
+  console.log(`🚀 Servidor rodando em: ${url}`);
+})();

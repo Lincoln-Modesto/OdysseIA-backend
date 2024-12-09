@@ -1,23 +1,18 @@
 import { CustomError } from '../utils/CustomError';
-import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { JwtPayload } from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'defaultsecret';
 
-export const authMiddleware = (req: Request, res: Response, next: NextFunction): any => {
-  const token = req.headers.authorization?.split(' ')[1];
-
+export const authMiddleware = (token: string | undefined) => {
   if (!token) {
-    return res.status(401).json({ message: 'Token não fornecido' });
+    throw new CustomError('Token não fornecido', 401);
   }
 
   try {
-    jwt.verify(token, JWT_SECRET);
-    next();
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    return decoded;
   } catch (error) {
-    if (error instanceof Error) {
-      return next(new CustomError('Token inválido', 401));
-    }
-    return next(new CustomError('Erro ao verificar o token', 500));
+    throw new CustomError('Token inválido', 401);
   }
 };

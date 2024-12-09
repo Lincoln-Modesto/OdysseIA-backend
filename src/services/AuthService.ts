@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
-import jwt, { JwtPayload } from 'jsonwebtoken';
-import { findUserByEmail, findUserById } from '../repositories/UserRepository';
+import jwt from 'jsonwebtoken';
+import { findUserByEmail } from '../repositories/UserRepository';
 import { CustomError } from '@src/utils/CustomError';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'defaultsecret';
